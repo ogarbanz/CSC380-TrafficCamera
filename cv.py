@@ -41,50 +41,36 @@ class EuclideanDistTracker:
         return objects_bbs_ids
 
 
-tracker = EuclideanDistTracker()
+def start_stream():
+    tracker = EuclideanDistTracker()
 
-cap = cv2.VideoCapture("Traffic Video 2.mov")
+    cap = cv2.VideoCapture("Traffic Video 2.mov")
 
-if not cap.isOpened():
-    print("Cannot open stream")
-    exit(1)
+    if not cap.isOpened():
+        print("Cannot open stream")
+        exit(1)
 
-object_detector = cv2.createBackgroundSubtractorMOG2(history=100, varThreshold=40)
+    while True:
+        _, frame = cap.read()
 
-while True:
-    ret, frame = cap.read()
-    height, width, _ = frame.shape
+        if frame is None:
+            break
 
-    roi = frame[0:height, 0:width]
+        detections = []
+        cars = cv2.CascadeClassifier("haarcascade_car.xml").detectMultiScale(frame, scaleFactor=1.15, minNeighbors=6)
+        for (x, y, w, h) in cars:
+            detections.append([x, y, w, h])
 
-    mask = object_detector.apply(roi)
-    _, mask = cv2.threshold(mask, 254, 255, cv2.THRESH_BINARY)
-    contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    detections = []
-    cars = cv2.CascadeClassifier("haarcascade_car.xml").detectMultiScale(frame, scaleFactor=1.1, minNeighbors=5)
-    for (x, y, w, h) in cars:
-        for cnt in contours:
-            area = cv2.contourArea(cnt)
-            if area > 100:
-                # cv2.drawContours(roi, [cnt], -1, (0, 255, 0), 2)
-                x2, y2, w2, h2 = cv2.boundingRect(cnt)
+        boxes_ids = tracker.update(detections)
+        for box_id in boxes_ids:
+            x, y, w, h, id = box_id
+            # cv2.putText(frame, str(id), (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 0), 2)
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-                if x2 >= x & x2 <= x + w:
-                    detections.append([x, y, w, h])
+        cv2.imshow("Traffic Camera", frame)
 
-    boxes_ids = tracker.update(detections)
-    for box_id in boxes_ids:
-        x, y, w, h, id = box_id
-        # cv2.putText(roi, str(id), (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 0), 2)
-        cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        if cv2.waitKey(30) == 27:
+            break
 
-    # cv2.imshow("roi", roi)
-    cv2.imshow("Frame", frame)
-    # cv2.imshow("Mask", mask)
-
-    key = cv2.waitKey(30)
-    if key == 27:
-        break
-
-cap.release()
-cv2.destroyAllWindows()
+    cap.release()
+    cv2.destroyAllWindows()
