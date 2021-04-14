@@ -1,9 +1,11 @@
 import cv2
 import math
 import tkinter as tk
-#from tkinter import ttk
-#from tkinter import *
+from tkinter import ttk
+from tkinter import *
 import tkinter.messagebox
+import time
+
 
 #tkinter window to get the input from thee user
 class GetInput:
@@ -13,7 +15,7 @@ class GetInput:
         self.root.geometry("300x200+500+200")  #window geometry
         self.root.resizable(0,0)           #disable resizing
         self.root.configure(background='#4D4D4D')    
-        s=Style(self.root)
+        s=ttk.Style(self.root)
         s.theme_use('xpnative')
         labe1 = tk.Label(self.root,foreground="#D6D6D6",background='#4D4D4D', text = 'Enter the distance in meter',
                           font=('Bold', 14)).place(x = 30, y = 10, width = 300, height = 70)
@@ -95,6 +97,8 @@ botAvg = (0,0)     #the midle point in the bottom of the rectangle
 dis_pixel = 0      #the equladian distance between the above two points
 
 
+
+
 tracker = EuclideanDistTracker()
 
 cap = cv2.VideoCapture("highway.mp4")
@@ -171,7 +175,7 @@ while True:
                 #print(topAvg, botAvg)
                 cv2.line(frame,topAvg,botAvg,(255,0,255),2)
             #put instruction text to the user
-            cv2.putText(frame,orderdict[len(points)+1], (500,40), cv2.FONT_HERSHEY_SIMPLEX, .75, (0,0,255))
+            cv2.putText(frame,orderdict[len(points)+1], (500,40), cv2.FONT_HERSHEY_SIMPLEX, .75, (255,0,255))
             cv2.putText(frame,"Press u to undo or Esc to continue recording", (400,20), cv2.FONT_HERSHEY_SIMPLEX, .75, (0,0,255))
             
             cv2.imshow("Frame", frame)   #update the freezing frame
@@ -182,12 +186,25 @@ while True:
             if(flag==2):
                 dis_pixel = math.sqrt((topAvg[0] - botAvg[0])**2 + (topAvg[1] - botAvg[1])**2)
                 #print(dis_pixel)
-                
-                
+
             cv2.imshow("Frame", frame)
             frame = frame2.copy()
-                
+            
+
+    #calculate speed
+        for (x, y, w, h) in cars:
+            if(x >= points[0][0] and y == points [0][1]):
+                cv2.line(img, (points[0][0], points[0][1]), (points[1][0], points[1][1]), (0, 255,0), 2) #Changes color of the line
+                time1 = time.time() #Initial time
+                print("Car Entered")
                     
+            if (x >= points[2][0] and y == points[2][1]):
+                cv2.line(img, (points[2][0],points[2][1]), (points[3][0], points[3][1]), (0, 0, 255), 2)
+                time2 = time.time()
+                print("Car Left.")
+                #We know that distance is 3m
+                print("Speed in (m/s) is:", dis/((time2-time1)))
+
                     
              
 
