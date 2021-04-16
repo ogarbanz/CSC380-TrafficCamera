@@ -5,6 +5,7 @@ from tkinter import ttk
 from tkinter import *
 import tkinter.messagebox
 import time
+from datetime import datetime
 
 
 #tkinter window to get the input from thee user
@@ -95,13 +96,14 @@ flag = 0           #flag to show the window and clculate the distace in order
 topAvg = (0,0)     #the midle point in the top of the rectangle
 botAvg = (0,0)     #the midle point in the bottom of the rectangle
 dis_pixel = 0      #the equladian distance between the above two points
+history = dict()   #to save the traking history for each id
 
 
 
 
 tracker = EuclideanDistTracker()
 
-cap = cv2.VideoCapture("highway.mp4")
+cap = cv2.VideoCapture("Traffic Video 2.mov")
 
 if not cap.isOpened():
     print("Cannot open stream")
@@ -120,28 +122,53 @@ while True:
     contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     detections = []
     cars = cv2.CascadeClassifier("haarcascade_car.xml").detectMultiScale(frame, scaleFactor=1.1, minNeighbors=5)
+
     for (x, y, w, h) in cars:
         for cnt in contours:
             area = cv2.contourArea(cnt)
             if area > 100:
                 # cv2.drawContours(roi, [cnt], -1, (0, 255, 0), 2)
                 x2, y2, w2, h2 = cv2.boundingRect(cnt)
-
+        
                 if x2 >= x & x2 <= x + w:
                     detections.append([x, y, w, h])
+                    
 
     boxes_ids = tracker.update(detections)
     for box_id in boxes_ids:
         x, y, w, h, id = box_id
         # cv2.putText(roi, str(id), (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 0), 2)
-        cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        if(id in history):       #each id have a list of t
+            value = history[id]
+            value.append([x, y, w, h, datetime.now()])
 
+                
+            #calculate the speed for each car in a screen
+            if(flag ==2):
+                init = value[0]
+                end = value[-1]
+                dis_in_pixels = math.sqrt((end[0] - init[0])**2 + (end[1] - init[1])**2)
+                if(dis_pixel !=0 and end[-1] != init[-1]):
+                    dis_in_meter = dis_in_pixels * dis / dis_pixel
+                    time_diff = end[-1] - init[-1]
+                    avgSpeed = dis_in_meter/time_diff.total_seconds()
+                    print("Avg speed of car",id, " is:",avgSpeed)
+                
+        else:
+            history[id] = [[x, y, w, h, datetime.now()]]
+        
+        cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        cv2.putText(roi,str(id), (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, .75, (0,0,255))     #here you can see the problem
+    #print("hist",len(history))
     # cv2.imshow("roi", roi)
     cv2.imshow("Frame", frame)
+
+
     # cv2.imshow("Mask", mask)
     frame2 = frame.copy()
     key = cv2.waitKey(30)
     if key == 27:
+        #print(history)
         break
     elif key ==115 or key== 83:         #press s or S to select the rectangle
         cv2.setMouseCallback('Frame',drawrect)       #assign drawrect function to handle the mouse event
@@ -162,12 +189,12 @@ while True:
             if(len(points)>0 and len(points)<=4):      
                 for i in range(len(points)):
                     cv2.circle(frame,points[i],2,(0,0,255),2)      #draw circle in each corner
-            if(len(points)==4):
+            if(len(points)==4 and flag==0):
                 #draw rectangle
                 for i in range(len(points)-1):
                     cv2.line(frame,points[i],points[i+1],(0,0,255),1)
                 cv2.line(frame,points[0],points[-1],(0,0,255),1)
-                flag +=1
+                flag =1
 
                 #draw the midle line
                 topAvg = (int((points[0][0] + points[1][0])/2), int((points[0][1] + points[1][1])/2))
@@ -185,13 +212,19 @@ while True:
                 pba.root.mainloop()
             if(flag==2):
                 dis_pixel = math.sqrt((topAvg[0] - botAvg[0])**2 + (topAvg[1] - botAvg[1])**2)
-                #print(dis_pixel)
+                #print("dis_pixel:",dis_pixel)
 
             cv2.imshow("Frame", frame)
             frame = frame2.copy()
-            
+            #print("flag:",flag)
 
-    #calculate speed
+#calculate speed
+            
+    #if(flag==2):
+        #for (x, y, w, h) in cars:
+            
+        """
+        #print("aaaa")
         for (x, y, w, h) in cars:
             if(x >= points[0][0] and y == points [0][1]):
                 cv2.line(img, (points[0][0], points[0][1]), (points[1][0], points[1][1]), (0, 255,0), 2) #Changes color of the line
@@ -204,6 +237,7 @@ while True:
                 print("Car Left.")
                 #We know that distance is 3m
                 print("Speed in (m/s) is:", dis/((time2-time1)))
+        """
 
                     
              
