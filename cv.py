@@ -1,4 +1,6 @@
+import time
 from datetime import datetime
+from multiprocessing import Process
 import cv2
 import math
 
@@ -44,10 +46,11 @@ class EuclideanDistTracker:
 
 def start_stream():
     tracker = EuclideanDistTracker()
-    frames = []
     email_send_time = datetime.now()
+    frames = []
+    speeds = []
 
-    cap = cv2.VideoCapture("Traffic Video 2.mov")
+    cap = cv2.VideoCapture("Traffic Video.mov")
 
     if not cap.isOpened():
         print("Cannot open stream")
@@ -77,15 +80,23 @@ def start_stream():
                     y_dis_sqr = math.pow(curr_y - frames[0][2], 2)
                     distance = math.sqrt(x_dis_sqr + y_dis_sqr)
                     if curr_time > frames[0][3]:
-                        speed = ((distance / (curr_time - frames[0][3])) * 2.236936) + 5
+                        speed = ((distance / (curr_time - frames[0][3])) * 2.236936) + 10
                         speed = round(speed, 2)
+                        speeds.append(speed)
+                        if len(speeds) > 1:
+                            speed = 0
+                            for curr_speed in speeds:
+                                speed += curr_speed
+                            speed /= len(speeds)
+                            speed = round(speed, 2)
                         time_diff = datetime.now() - email_send_time
-                        if speed > 20 & int(time_diff.total_seconds()) > 5:
+                        if speed > 20 and int(time_diff.total_seconds()) > 5:
                             email_send_time = datetime.now()
                             print("SPEED EXCEEDED!")
                     frames.append([curr_id, curr_x, curr_y, curr_time])
                 else:
                     frames = [[curr_id, curr_x, curr_y, curr_time]]
+                    speeds = []
             else:
                 frames.append([curr_id, curr_x, curr_y, curr_time])
 
