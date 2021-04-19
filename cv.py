@@ -1,3 +1,4 @@
+from datetime import datetime
 import cv2
 import math
 
@@ -21,7 +22,7 @@ class EuclideanDistTracker:
 
                 if dist < 25:
                     self.center_points[id] = (cx, cy)
-                    print(self.center_points)
+                    # print(self.center_points)
                     objects_bbs_ids.append([x, y, w, h, id])
                     same_object_detected = True
                     break
@@ -43,6 +44,8 @@ class EuclideanDistTracker:
 
 def start_stream():
     tracker = EuclideanDistTracker()
+    frames = []
+    email_send_time = datetime.now()
 
     cap = cv2.VideoCapture("Traffic Video 2.mov")
 
@@ -52,6 +55,7 @@ def start_stream():
 
     while True:
         _, frame = cap.read()
+        speed = 0
 
         if frame is None:
             break
@@ -62,9 +66,33 @@ def start_stream():
             detections.append([x, y, w, h])
 
         boxes_ids = tracker.update(detections)
+        if not len(boxes_ids) == 0:
+            curr_id = boxes_ids[0][4]
+            curr_x = boxes_ids[0][0]
+            curr_y = boxes_ids[0][1]
+            curr_time = datetime.now().second
+            if not len(frames) == 0:
+                if frames[len(frames) - 1][0] == curr_id:
+                    x_dis_sqr = math.pow(curr_x - frames[0][1], 2)
+                    y_dis_sqr = math.pow(curr_y - frames[0][2], 2)
+                    distance = math.sqrt(x_dis_sqr + y_dis_sqr)
+                    if curr_time > frames[0][3]:
+                        speed = ((distance / (curr_time - frames[0][3])) * 2.236936) + 5
+                        speed = round(speed, 2)
+                        time_diff = datetime.now() - email_send_time
+                        if speed > 20 & int(time_diff.total_seconds()) > 5:
+                            email_send_time = datetime.now()
+                            print("SPEED EXCEEDED!")
+                    frames.append([curr_id, curr_x, curr_y, curr_time])
+                else:
+                    frames = [[curr_id, curr_x, curr_y, curr_time]]
+            else:
+                frames.append([curr_id, curr_x, curr_y, curr_time])
+
         for box_id in boxes_ids:
             x, y, w, h, id = box_id
-            # cv2.putText(frame, str(id), (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 0), 2)
+            if speed > 0:
+                cv2.putText(frame, str(speed), (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 0), 2)
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
         cv2.imshow("Traffic Camera", frame)
