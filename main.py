@@ -19,17 +19,17 @@ def settings():
     email_label = tk.Label(window, bg='#235937', text="Email", font=('', 12), fg='#FFFFFF')
     window.create_window(150, 80, anchor='e', window=email_label)
     email_field = tk.Entry(window, width=30, bd=3)
-    window.create_window(250, 80, anchor='center', window=email_field)
+    window.create_window(155, 80, anchor='w', window=email_field)
 
     speed_label = tk.Label(window, bg='#235937', text="Speed Limit", font=('', 12), fg='#FFFFFF')
     window.create_window(150, 120, anchor='e', window=speed_label)
     speed_field = tk.Entry(window, width=30, bd=3)
-    window.create_window(250, 120, anchor='center', window=speed_field)
+    window.create_window(155, 120, anchor='w', window=speed_field)
 
     location_label = tk.Label(window, bg='#235937', text="Location", font=('', 12), fg='#FFFFFF')
     window.create_window(150, 160, anchor='e', window=location_label)
     location_field = tk.Entry(window, width=30, bd=3)
-    window.create_window(250, 160, anchor='center', window=location_field)
+    window.create_window(155, 160, anchor='w', window=location_field)
 
     start_button = tk.Button(text="Start", width=10, font=('', 12), command=start_stream)
     window.create_window(230, 240, anchor='e', window=start_button)
