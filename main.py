@@ -1,5 +1,6 @@
 import tkinter as tk
 import tkinter.messagebox
+import webbrowser
 import re
 import cv
 
@@ -11,6 +12,12 @@ def settings():
         widget.destroy()
     if state == "help":
         back_button.destroy()
+        github_button.destroy()
+        window.delete(border)
+        window.delete(horizon)
+        window.delete(left_road)
+        window.delete(right_road)
+        window.delete(middle_road)
     state = "settings"
 
     settings_title = tk.Label(window, bg='#235937', text="Settings", font=('', 12, 'bold'), fg='#FFE86E')
@@ -39,7 +46,7 @@ def settings():
 
 
 def help():
-    global state, back_button
+    global state, back_button, github_button, border, horizon, left_road, right_road, middle_road
     for widget in window.winfo_children():
         widget.destroy()
     start_button.destroy()
@@ -49,30 +56,39 @@ def help():
     help_title = tk.Label(window, bg='#235937', text="Help", font=('', 12, 'bold'), fg='#FFE86E')
     window.create_window(250, 20, anchor='center', window=help_title)
 
-    getting_started = tk.Label(window, bg='#235937', text="Getting Started", font=('', 12, 'italic'), fg='#FFFFFF')
-    window.create_window(250, 60, anchor='center', window=getting_started)
-
-    s_text = """Upon starting the program, you will be greeted by the
-        settings page of the Traffic Camera software. Here, you can
-        modify the destination of the email notification, the speed limit,
-        and the location of the camera. At the bottom of the screen are
-        two buttons. The 'Start' button saves all of the fields entered
-        and starts the video stream. The 'Help' button takes you to 
-        this help page."""
+    s_text = "The program starts on the settings page where you should enter an\n" \
+             "email address, the speed limit, and the location of the Traffic\n" \
+             "Camera. Clicking the \"Start\" button should close the settings\n" \
+             "options and begin displaying the video feed if all entries have\n" \
+             "been entered correctly. Clicking the \"Help\" button will bring\n" \
+             "you to this page. Please set up the Traffic Camera according to\n" \
+             "the image below."
     start_text = tk.Label(window, bg='#235937', text=s_text, font=('', 12), fg='#FFFFFF')
-    window.create_window(250, 80, anchor='n', window=start_text)
+    window.create_window(250, 35, anchor='n', window=start_text)
 
-    how_it_works_title = tk.Label(window, bg='#235937', text="How It Works", font=('', 12, 'italic'), fg='#FFFFFF')
-    window.create_window(250, 240, anchor='center', window=how_it_works_title)
+    border = window.create_rectangle(180, 175, 320, 255, fill='#FFFFFF')
+    horizon = window.create_line(180, 215, 320, 215)
+    left_road = window.create_line(200, 215, 240, 255)
+    right_road = window.create_line(215, 215, 320, 235)
+    middle_road = window.create_line(207, 215, 305, 255, dash=5)
 
-    how_it_works_text = """Each time a vehicle enters the frame, its speed
-        is measured. When a vehicle's measured speed exceeds
-        the speed limit, an email notification will be sent."""
+    how_it_works_text = "When a vehicle enters the frame, it should be detected and its\n" \
+                        "speed should be measured. The vehicle's measured speed is then\n" \
+                        "compared with the speed limit entered on the settings page. If\n" \
+                        "the speed limit is exceeded, an email is sent to the email address\n" \
+                        "entered on the settings page. The email will include the time of\n" \
+                        "the violation, the location entered on the settings page, the\n" \
+                        "measured speed, and a picture of the vehicle.\n\n" \
+                        "For more information please visit the GitHub page by clicking the\n" \
+                        "\"GitHub\" button below."
     settings_label = tk.Label(window, bg='#235937', text=how_it_works_text, font=('', 12), fg='#FFFFFF')
     window.create_window(250, 260, anchor='n', window=settings_label)
 
     back_button = tk.Button(text="Back", width=10, font=('', 12), command=settings)
-    window.create_window(250, 360, anchor='center', window=back_button)
+    window.create_window(230, 470, anchor='e', window=back_button)
+
+    github_button = tk.Button(text="GitHub", width=10, font=('', 12), command=lambda:webbrowser.open_new("https://github.com/ogarbanz/CSC380-TrafficCamera"))
+    window.create_window(270, 470, anchor='w', window=github_button)
 
 
 def start_stream():
@@ -90,7 +106,7 @@ def start_stream():
         tk.messagebox.showerror(title="Error", message="Invalid entry")
     else:
         root.destroy()
-        cv.start_stream()
+        cv.start_stream(user_email, user_speed, user_location)
 
 
 def start_ui():
