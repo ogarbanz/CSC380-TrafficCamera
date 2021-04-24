@@ -1,8 +1,8 @@
-import time
 from datetime import datetime
-from multiprocessing import Process
-import cv2
+import multiprocessing
 import math
+import cv2
+import es
 
 
 class EuclideanDistTracker:
@@ -44,13 +44,17 @@ class EuclideanDistTracker:
         return objects_bbs_ids
 
 
-def start_stream():
+def start_stream(user_email, user_speed, user_location):
     tracker = EuclideanDistTracker()
-    email_send_time = datetime.now()
+    detected_time = datetime.now()
+    speed_exceeded = False
+    saved_speed = 0
+    frame_wait = 0
+    frame_num = 0
     frames = []
     speeds = []
 
-    cap = cv2.VideoCapture("Traffic Video.mov")
+    cap = cv2.VideoCapture("Traffic Video 2.mov")
 
     if not cap.isOpened():
         print("Cannot open stream")
@@ -70,9 +74,10 @@ def start_stream():
 
         boxes_ids = tracker.update(detections)
         if not len(boxes_ids) == 0:
-            curr_id = boxes_ids[0][4]
             curr_x = boxes_ids[0][0]
             curr_y = boxes_ids[0][1]
+            curr_width = boxes_ids[0][2]
+            curr_id = boxes_ids[0][4]
             curr_time = datetime.now().second
             if not len(frames) == 0:
                 if frames[len(frames) - 1][0] == curr_id:
@@ -89,16 +94,33 @@ def start_stream():
                                 speed += curr_speed
                             speed /= len(speeds)
                             speed = round(speed, 2)
-                        time_diff = datetime.now() - email_send_time
-                        if speed > 20 and int(time_diff.total_seconds()) > 5:
-                            email_send_time = datetime.now()
-                            print("SPEED EXCEEDED!")
+                        time_diff = datetime.now() - detected_time
+                        if speed > int(user_speed) and int(time_diff.total_seconds()) > 5:
+                            detected_time = datetime.now()
+                            speed_exceeded = True
+                            saved_speed = speed
+                            if curr_width <= 30:
+                                frame_wait = 120
+                            elif 30 < curr_width <= 70:
+                                frame_wait = 70
+                            elif 70 < curr_width <= 80:
+                                frame_wait = 30
+                            elif 80 < curr_width:
+                                frame_wait = 0
                     frames.append([curr_id, curr_x, curr_y, curr_time])
                 else:
                     frames = [[curr_id, curr_x, curr_y, curr_time]]
                     speeds = []
             else:
                 frames.append([curr_id, curr_x, curr_y, curr_time])
+        if speed_exceeded and frame_num >= frame_wait:
+            filename = str(datetime.now().strftime("%Y-%m-%d %H-%M-%S")) + ".jpg"
+            cv2.imwrite(filename, frame)
+            multiprocessing.Process(target=es.send_email, args=(user_email, saved_speed, user_location, filename)).start()
+            speed_exceeded = False
+            frame_num = 0
+        elif speed_exceeded:
+            frame_num += 1
 
         for box_id in boxes_ids:
             x, y, w, h, id = box_id
