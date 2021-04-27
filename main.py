@@ -1,12 +1,14 @@
 import tkinter as tk
 import tkinter.messagebox
+import tkinter.filedialog
 import webbrowser
+import os
 import re
 import cv
 
 
 def settings():
-    global state, start_button, help_button, email_field, speed_field, location_field
+    global state, start_button, help_button, choose_file_button, email_field, speed_field, location_field
 
     for widget in window.winfo_children():
         widget.destroy()
@@ -44,6 +46,23 @@ def settings():
     help_button = tk.Button(text="Help", width=10, font=('', 12), command=help)
     window.create_window(270, 240, anchor='w', window=help_button)
 
+    note_text = "Note:\nExit the video feed by pressing the ESC key\non the keyboard"
+    note_label = tk.Label(window, bg='#235937', text=note_text, font=('', 12, 'bold'), fg='#FCE86E')
+    window.create_window(250, 300, anchor='n', window=note_label)
+
+    choose_file_text = "Click \"Choose File\" to open a pre-recorded video.\n" \
+                       "Otherwise, the program will start with live video feed."
+    choose_file_label = tk.Label(window, bg='#235937', text=choose_file_text, font=('', 12), fg='#FFFFFF')
+    window.create_window(250, 400, anchor='n', window=choose_file_label)
+
+    choose_file_button = tk.Button(text="Choose File", width=10, font=('', 12), command=load_file)
+    window.create_window(250, 470, anchor='center', window=choose_file_button)
+
+
+def load_file():
+    global file
+    file = tk.filedialog.askopenfile(filetype=[("Video Files", ["*.mov", "*.mp4"])])
+
 
 def help():
     global state, back_button, github_button, border, horizon, left_road, right_road, middle_road
@@ -51,18 +70,19 @@ def help():
         widget.destroy()
     start_button.destroy()
     help_button.destroy()
+    choose_file_button.destroy()
     state = "help"
 
     help_title = tk.Label(window, bg='#235937', text="Help", font=('', 12, 'bold'), fg='#FFE86E')
     window.create_window(250, 20, anchor='center', window=help_title)
 
-    s_text = "The program starts on the settings page where you should enter an\n" \
-             "email address, the speed limit, and the location of the Traffic\n" \
-             "Camera. Clicking the \"Start\" button should close the settings\n" \
-             "options and begin displaying the video feed if all entries have\n" \
-             "been entered correctly. Clicking the \"Help\" button will bring\n" \
-             "you to this page. Please set up the Traffic Camera according to\n" \
-             "the image below."
+    s_text = "The program starts on the settings page where you should\n" \
+             "enter an email address, the speed limit, and the location\n" \
+             "of the Traffic Camera. Clicking the \"Start\" button\n" \
+             "should close the settings options and begin displaying\n" \
+             "the video feed if all entries have been entered correctly.\n" \
+             "Please set up the Traffic Camera according to the image\n" \
+             "below or use pre-recorded videos of the same format."
     start_text = tk.Label(window, bg='#235937', text=s_text, font=('', 12), fg='#FFFFFF')
     window.create_window(250, 35, anchor='n', window=start_text)
 
@@ -72,15 +92,16 @@ def help():
     right_road = window.create_line(215, 215, 320, 235)
     middle_road = window.create_line(207, 215, 305, 255, dash=5)
 
-    how_it_works_text = "When a vehicle enters the frame, it should be detected and its\n" \
-                        "speed should be measured. The vehicle's measured speed is then\n" \
-                        "compared with the speed limit entered on the settings page. If\n" \
-                        "the speed limit is exceeded, an email is sent to the email address\n" \
-                        "entered on the settings page. The email will include the time of\n" \
-                        "the violation, the location entered on the settings page, the\n" \
-                        "measured speed, and a picture of the vehicle.\n\n" \
-                        "For more information please visit the GitHub page by clicking the\n" \
-                        "\"GitHub\" button below."
+    how_it_works_text = "When a vehicle enters the frame, it should be detected\n" \
+                        "and its speed should be measured. The vehicle's\n" \
+                        "measured speed is then compared with the speed limit\n" \
+                        "entered on the settings page. If the speed limit is\n" \
+                        "exceeded, an email is sent to the email address entered\n" \
+                        "on the settings page. The email will include the time\n" \
+                        "of the violation, the location entered on the settings\n" \
+                        "page, the measured speed, a picture of the vehicle, as\n" \
+                        "well as a video. For more information please visit the\n" \
+                        "GitHub page by clicking \"GitHub\" below."
     settings_label = tk.Label(window, bg='#235937', text=how_it_works_text, font=('', 12), fg='#FFFFFF')
     window.create_window(250, 260, anchor='n', window=settings_label)
 
@@ -104,13 +125,17 @@ def start_stream():
         tk.messagebox.showerror(title="Error", message="Invalid entry")
     elif (int(user_speed) < 0) | (int(user_speed) > 60):
         tk.messagebox.showerror(title="Error", message="Invalid entry")
+    elif not os.path.exists("haarcascade_car.xml"):
+        tk.messagebox.showerror(title="Error", message="Cannot find haarcascade_car.xml")
+        exit(1)
     else:
         root.destroy()
-        cv.start_stream(user_email, user_speed, user_location)
+        cv.start_stream(file, user_email, user_speed, user_location)
 
 
 def start_ui():
-    global root, window, state
+    global root, window, state, file
+    file = None
 
     root = tk.Tk()
     root.title("Traffic Camera")
