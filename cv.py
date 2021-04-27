@@ -1,4 +1,5 @@
 from datetime import datetime
+import tkinter.messagebox
 import multiprocessing
 import math
 import cv2
@@ -44,20 +45,24 @@ class EuclideanDistTracker:
         return objects_bbs_ids
 
 
-def start_stream(user_email, user_speed, user_location):
+def start_stream(vid_file, user_email, user_speed, user_location):
     tracker = EuclideanDistTracker()
-    detected_time = datetime.now()
     speed_exceeded = False
     saved_speed = 0
-    frame_wait = 0
     frame_num = 0
     frames = []
     speeds = []
+    out = None
+    date = ""
 
-    cap = cv2.VideoCapture("Traffic Video 2.mov")
+    if vid_file is None:
+        cap = cv2.VideoCapture(0)
+    else:
+        cap = cv2.VideoCapture(vid_file.name)
 
     if not cap.isOpened():
-        print("Cannot open stream")
+        tkinter.Tk().withdraw()
+        tkinter.messagebox.showerror(title="Error", message="Cannot open stream")
         exit(1)
 
     while True:
@@ -76,7 +81,6 @@ def start_stream(user_email, user_speed, user_location):
         if not len(boxes_ids) == 0:
             curr_x = boxes_ids[0][0]
             curr_y = boxes_ids[0][1]
-            curr_width = boxes_ids[0][2]
             curr_id = boxes_ids[0][4]
             curr_time = datetime.now().second
             if not len(frames) == 0:
@@ -94,39 +98,36 @@ def start_stream(user_email, user_speed, user_location):
                                 speed += curr_speed
                             speed /= len(speeds)
                             speed = round(speed, 2)
-                        time_diff = datetime.now() - detected_time
-                        if speed > int(user_speed) and int(time_diff.total_seconds()) > 5:
-                            detected_time = datetime.now()
+                        if speed > int(user_speed):
                             speed_exceeded = True
-                            saved_speed = speed
-                            if curr_width <= 30:
-                                frame_wait = 120
-                            elif 30 < curr_width <= 70:
-                                frame_wait = 70
-                            elif 70 < curr_width <= 80:
-                                frame_wait = 30
-                            elif 80 < curr_width:
-                                frame_wait = 0
                     frames.append([curr_id, curr_x, curr_y, curr_time])
                 else:
                     frames = [[curr_id, curr_x, curr_y, curr_time]]
                     speeds = []
             else:
                 frames.append([curr_id, curr_x, curr_y, curr_time])
-        if speed_exceeded and frame_num >= frame_wait:
-            filename = str(datetime.now().strftime("%Y-%m-%d %H-%M-%S")) + ".jpg"
-            cv2.imwrite(filename, frame)
-            multiprocessing.Process(target=es.send_email, args=(user_email, saved_speed, user_location, filename)).start()
+        if speed_exceeded and frame_num == 0:
+            saved_speed = speed
+            date = str(datetime.now().strftime("%Y-%m-%dT%H%M%S"))
+            out = cv2.VideoWriter(date + ".mov", -1, 30, (frame.shape[1], frame.shape[0]))
+            frame_num += 1
+        elif speed_exceeded and frame_num < 150:
+            out.write(frame)
+            frame_num += 1
+        elif speed_exceeded and frame_num >= 150:
+            out.release()
+            multiprocessing.Process(target=es.send_email, args=(user_email, saved_speed, user_location, date + ".jpg", date + ".mov")).start()
             speed_exceeded = False
             frame_num = 0
-        elif speed_exceeded:
-            frame_num += 1
 
         for box_id in boxes_ids:
             x, y, w, h, id = box_id
             if speed > 0:
                 cv2.putText(frame, str(speed), (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 0), 2)
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+        if speed_exceeded and frame_num == 1:
+            cv2.imwrite(date + ".jpg", frame)
 
         cv2.imshow("Traffic Camera", frame)
 
