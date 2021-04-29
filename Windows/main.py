@@ -8,7 +8,7 @@ import cv
 
 
 def settings():
-    global state, start_button, help_button, choose_file_button, email_field, speed_field, location_field
+    global state, start_button, help_button, load_file_button, email_field, speed_field, location_field
 
     for widget in window.winfo_children():
         widget.destroy()
@@ -50,18 +50,18 @@ def settings():
     note_label = tk.Label(window, bg='#235937', text=note_text, font=('', 12, 'bold'), fg='#FCE86E')
     window.create_window(250, 300, anchor='n', window=note_label)
 
-    choose_file_text = "Click \"Choose File\" to open a pre-recorded video.\n" \
+    load_file_text = "Click \"Load File\" to load a pre-recorded video.\n" \
                        "Otherwise, the program will start with live video feed."
-    choose_file_label = tk.Label(window, bg='#235937', text=choose_file_text, font=('', 12), fg='#FFFFFF')
-    window.create_window(250, 400, anchor='n', window=choose_file_label)
+    load_file_label = tk.Label(window, bg='#235937', text=load_file_text, font=('', 12), fg='#FFFFFF')
+    window.create_window(250, 400, anchor='n', window=load_file_label)
 
-    choose_file_button = tk.Button(text="Choose File", width=10, font=('', 12), command=load_file)
-    window.create_window(250, 470, anchor='center', window=choose_file_button)
+    load_file_button = tk.Button(text="Load File", width=10, font=('', 12), command=load_file)
+    window.create_window(250, 470, anchor='center', window=load_file_button)
 
 
 def load_file():
     global file
-    file = tk.filedialog.askopenfile(filetype=[("Video Files", ["*.mov", "*.mp4"])])
+    file = tk.filedialog.askopenfile(filetype=[("*.mov *.mp4", ["*.mov", "*.mp4"])]).name
 
 
 def help():
@@ -70,7 +70,7 @@ def help():
         widget.destroy()
     start_button.destroy()
     help_button.destroy()
-    choose_file_button.destroy()
+    load_file_button.destroy()
     state = "help"
 
     help_title = tk.Label(window, bg='#235937', text="Help", font=('', 12, 'bold'), fg='#FFE86E')
