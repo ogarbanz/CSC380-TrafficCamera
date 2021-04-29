@@ -58,7 +58,7 @@ def start_stream(vid_file, user_email, user_speed, user_location):
     if vid_file is None:
         cap = cv2.VideoCapture(0)
     else:
-        cap = cv2.VideoCapture(vid_file.name)
+        cap = cv2.VideoCapture(vid_file)
 
     if not cap.isOpened():
         tkinter.Tk().withdraw()
