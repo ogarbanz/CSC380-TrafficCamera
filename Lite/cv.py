@@ -109,7 +109,6 @@ def start_stream(user_email, user_speed, user_location):
                                     frame_wait = 50
                                 else:
                                     frame_wait = 30
-                                print(curr_width)
                     frames.append([curr_id, curr_x, curr_y, curr_time])
                 else:
                     frames = [[curr_id, curr_x, curr_y, curr_time]]
